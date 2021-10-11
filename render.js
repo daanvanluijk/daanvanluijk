@@ -17,9 +17,11 @@ function init() {
 
     if ('URLSearchParams' in window) {
         let searchParams = new URLSearchParams(window.location.search);
-        title = searchParams.get('scene');
-        document.title = title;
-        console.log(title);
+        if (searchParams.get('scene')) {
+            title = searchParams.get('scene');
+            document.title = title;
+            console.log(title);
+        }
     }
 
     for (let i = 0; i < scenes[title].collisionBoxes.length; i++) {
