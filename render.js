@@ -11,6 +11,7 @@ let mouseX;
 let mouseY;
 let spriteW = 640;
 let spriteH = 480;
+let previousScene;
 
 function init() {
     console.log("INITIALIZING");
@@ -24,12 +25,7 @@ function init() {
         }
     }
 
-    for (let i = 0; i < scenes[title].collisionBoxes.length; i++) {
-        let cb = scenes[title].collisionBoxes[i];
-        if (cb.spriteSheet) {
-            cb.spriteSheet.src = cb.spriteSheetSource;
-        }
-    }
+    setSpriteSheetSources();
 
     image = new Image();
     image.src = scenes[title].imageSource;
@@ -60,12 +56,7 @@ function reload(cb) {
         history.pushState(null, '', newRelativePathQuery);
     }
 
-    for (let i = 0; i < scenes[title].collisionBoxes.length; i++) {
-        let cb = scenes[title].collisionBoxes[i];
-        if (cb.spriteSheet) {
-            cb.spriteSheet.src = cb.spriteSheetSource;
-        }
-    }
+    setSpriteSheetSources();
 
     image = new Image();
     image.src = scenes[title].imageSource;
@@ -77,6 +68,15 @@ function reload(cb) {
     window.addEventListener('mousemove', onMouseMove);
 
     console.log("RELOADING FINISHED");
+}
+
+function setSpriteSheetSources() {
+    for (let i = 0; i < scenes[title].collisionBoxes.length; i++) {
+        let cb = scenes[title].collisionBoxes[i];
+        if (cb.spriteSheet) {
+            cb.spriteSheet.src = cb.spriteSheetSource;
+        }
+    }
 }
 
 function draw() {
@@ -93,15 +93,23 @@ function draw() {
     canvasW = canvas.width;
     canvasH = canvas.height;
 
-    let newH = (imageH * (canvasW / imageW))
-    let difference = newH - canvasH;
-    ctx.drawImage(image, 0, -difference / 2, canvasW, newH);
+    let newW = canvasW;
+    let newH = canvasH;
+    if (imageH * (canvasW / imageW) < canvasH) {
+        newH = (imageH * (canvasW / imageW));
+    } else {
+        newW = (imageW * (canvasH / imageH));
+    }
+
+    let wDifference = newW - canvasW;
+    let hDifference = newH - canvasH;
+    ctx.drawImage(image, -wDifference / 2, -hDifference / 2, newW, newH);
 
     /*ctx.fillStyle = "#FF0000";
     for (let i = 0; i < scenes[title].collisionBoxes.length; i++) {
         let cb = scenes[title].collisionBoxes[i];
-        ctx.fillRect(canvasW * cb.x, newH * cb.y - difference / 2,
-            canvasW * cb.w, newH * cb.h);
+        ctx.fillRect(newW * cb.x - wDifference / 2, newH * cb.y - hDifference / 2,
+            newW * cb.w, newH * cb.h);
     }*/
 }
 
@@ -115,9 +123,41 @@ function onMouseClick() {
     for (let i = 0; i < scenes[title].collisionBoxes.length; i++) {
         let cb = scenes[title].collisionBoxes[i];
         if (checkCollision(cb)) {
-            playExitAnimation(cb).then(() => reload(cb));
+            if (cb.targetType !== 'book') {
+                playExitAnimation(cb).then(() => reload(cb));
+            } else {
+                goToBook('bookFarFromGate');
+            }
         }
     }
+}
+
+function goToBook(name) {
+    previousScene = title;
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    canvas.width = 0;
+    canvas.height = 0;
+    document.body.style.height = '100vh';
+    window.removeEventListener('resize', draw);
+    document.getElementById("content").innerHTML =
+        '<iframe src="bookFarFromGate.html" width="100%" height="100%"><\/iframe>';
+    document.getElementById("content").style.width = '100%';
+    document.getElementById("content").style.height = '100%';
+    //document.getElementById("content").document.getElementById("backButton").onclick = leaveBook;
+
+    console.log(document.getElementById("content"));
+    console.log('content finished loading');
+}
+
+function leaveBook() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    canvasW = canvas.width;
+    canvasH = canvas.height;
+    document.getElementById("content").innerHTML = "";
+    reload()
 }
 
 async function playExitAnimation(cb) {

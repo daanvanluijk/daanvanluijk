@@ -8,6 +8,14 @@ let scenes = {
                 w: 0.13,
                 h: 0.24,
                 target: 'in front of gate'
+            },
+            {
+                x: 0.00,
+                y: 0.00,
+                w: 0.10,
+                h: 0.10,
+                targetType: 'book',
+                target: 'bookFarFromGate.html'
             }
         ]
     },
