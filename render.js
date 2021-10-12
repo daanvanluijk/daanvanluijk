@@ -73,8 +73,10 @@ function reload(cb) {
 function setSpriteSheetSources() {
     for (let i = 0; i < scenes[title].collisionBoxes.length; i++) {
         let cb = scenes[title].collisionBoxes[i];
-        if (cb.spriteSheet) {
+        if (cb.spriteSheetSource) {
+            cb.spriteSheet = new Image();
             cb.spriteSheet.src = cb.spriteSheetSource;
+            console.log(cb.spriteSheetSource);
         }
     }
 }
@@ -93,24 +95,20 @@ function draw() {
     canvasW = canvas.width;
     canvasH = canvas.height;
 
-    let newW = canvasW;
-    let newH = canvasH;
-    if (imageH * (canvasW / imageW) < canvasH) {
-        newH = (imageH * (canvasW / imageW));
-    } else {
-        newW = (imageW * (canvasH / imageH));
-    }
+    let screenValues = calculateNewScreenValues();
+    let newW = screenValues[0];
+    let newH = screenValues[1];
+    let wDifference = screenValues[2];
+    let hDifference = screenValues[3];
 
-    let wDifference = newW - canvasW;
-    let hDifference = newH - canvasH;
     ctx.drawImage(image, -wDifference / 2, -hDifference / 2, newW, newH);
 
-    /*ctx.fillStyle = "#FF0000";
+    ctx.fillStyle = "#FF0000";
     for (let i = 0; i < scenes[title].collisionBoxes.length; i++) {
         let cb = scenes[title].collisionBoxes[i];
         ctx.fillRect(newW * cb.x - wDifference / 2, newH * cb.y - hDifference / 2,
             newW * cb.w, newH * cb.h);
-    }*/
+    }
 }
 
 function onMouseClick() {
@@ -118,12 +116,12 @@ function onMouseClick() {
     window.removeEventListener('mousemove', onMouseMove);
     canvas.style.cursor = 'default';
 
-    let newH = (imageH * (canvasW / imageW))
-    let difference = newH - canvasH;
     for (let i = 0; i < scenes[title].collisionBoxes.length; i++) {
         let cb = scenes[title].collisionBoxes[i];
         if (checkCollision(cb)) {
             if (cb.targetType !== 'book') {
+                console.log("start animation");
+                console.log(cb);
                 playExitAnimation(cb).then(() => reload(cb));
             } else {
                 goToBook('bookFarFromGate');
@@ -161,11 +159,16 @@ function leaveBook() {
 }
 
 async function playExitAnimation(cb) {
-    let newH = (imageH * (canvasW / imageW))
-    let difference = newH - canvasH;
+    let screenValues = calculateNewScreenValues();
+    let newW = screenValues[0];
+    let newH = screenValues[1];
+    let wDifference = screenValues[2];
+    let hDifference = screenValues[3];
+
+    console.log(cb.spriteSheet);
     if (cb.spriteSheet) {
         for (let i = 0; i < cb.spriteAmount; i++) {
-            ctx.drawImage(cb.spriteSheet, i * spriteW, 0, spriteW, spriteH, 0, -difference / 2, canvasW, newH);
+            ctx.drawImage(cb.spriteSheet, i * spriteW, 0, spriteW, spriteH, -wDifference / 2, -hDifference / 2, newW, newH);
             await sleep(83);
             console.log(i * spriteW);
         }
@@ -188,10 +191,28 @@ function onMouseMove() {
 }
 
 function checkCollision(cb) {
-    let newH = (imageH * (canvasW / imageW))
-    let difference = newH - canvasH;
-    return (mouseX > canvasW * cb.x && mouseX < canvasW * cb.x + canvasW * cb.w
-        && mouseY > newH * cb.y - difference / 2 && mouseY < (newH * cb.y - difference / 2) + newH * cb.h)
+    let screenValues = calculateNewScreenValues();
+    let newW = screenValues[0];
+    let newH = screenValues[1];
+    let wDifference = screenValues[2];
+    let hDifference = screenValues[3];
+
+    return (mouseX > newW * cb.x - wDifference / 2 && mouseX < (newW * cb.x - wDifference / 2) + newW * cb.w
+        && mouseY > newH * cb.y - hDifference / 2 && mouseY < (newH * cb.y - hDifference / 2) + newH * cb.h)
+}
+
+function calculateNewScreenValues() {
+    let newW = canvasW;
+    let newH = canvasH;
+    if (imageH * (canvasW / imageW) < canvasH) {
+        newH = (imageH * (canvasW / imageW));
+    } else {
+        newW = (imageW * (canvasH / imageH));
+    }
+    let wDifference = newW - canvasW;
+    let hDifference = newH - canvasH;
+
+    return [newW, newH, wDifference, hDifference]
 }
 
 document.addEventListener('mousemove', (event) => {
